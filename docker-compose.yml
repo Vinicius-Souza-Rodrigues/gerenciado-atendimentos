@@ -1,0 +1,98 @@
+version: '3.8'
+
+networks:
+  backend-db:
+    driver: bridge
+  backend-evolution:
+    driver: bridge
+  evolution-cache:
+    driver: bridge
+  frontend-backend:
+    driver: bridge
+
+services:
+  # PostgreSQL (Supabase local equivalente)
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_DB: agendamentos
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend-db
+
+  # Spring Boot Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend-agendamentos
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: agendamentos
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend/src:/app/src
+    networks:
+      - backend-db
+      - backend-evolution
+      - frontend-backend
+
+  # Redis (para Evolution API)
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - evolution-cache
+
+  # Evolution API (self-hosted)
+  evolution:
+    image: atendai/evolution-api:latest
+    container_name: evolution
+    restart: always
+    environment:
+      API_URL_EXTERNAL: http://localhost:8080
+      REDIS_URI: redis://redis:6379
+      REDIS_PREFIX_KEY: evolution
+      ENABLE_WEBHOOK: "true"
+      DATABASE_PROVIDER: sqlite
+      DATABASE_SQLITE_FILENAME: evolution.sqlite
+    ports:
+      - "8888:8080"
+    depends_on:
+      - redis
+    volumes:
+      - evolution_data:/home/evolution/instances
+    networks:
+      - backend-evolution
+      - evolution-cache
+
+volumes:
+  postgres_data:
+  evolution_data:
+  redis_data:
