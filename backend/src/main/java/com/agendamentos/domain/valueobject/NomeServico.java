@@ -1,15 +1,23 @@
 package com.agendamentos.domain.valueobject;
 
-public record NomeServico(String valor) {
+import lombok.Value;
 
-    public NomeServico {
+@Value
+public class NomeServico {
+    String valor;
+
+    public NomeServico(String valor) {
         if (valor == null || valor.isBlank()) {
-            throw new IllegalArgumentException("Nome do serviço não pode ser vazio");
+            throw new IllegalArgumentException("Nome do serviço não pode estar vazio");
         }
-        valor = valor.trim();
         if (valor.length() > 100) {
-            throw new IllegalArgumentException("Nome do serviço excede 100 caracteres");
+            throw new IllegalArgumentException("Nome do serviço não pode ter mais de 100 caracteres");
         }
+        this.valor = valor.trim();
     }
 
+    @Override
+    public String toString() {
+        return valor;
+    }
 }

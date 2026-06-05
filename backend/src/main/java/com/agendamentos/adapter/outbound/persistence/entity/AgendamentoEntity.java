@@ -1,4 +1,4 @@
-package com.agendamentos.adapter.outbound;
+package com.agendamentos.adapter.outbound.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

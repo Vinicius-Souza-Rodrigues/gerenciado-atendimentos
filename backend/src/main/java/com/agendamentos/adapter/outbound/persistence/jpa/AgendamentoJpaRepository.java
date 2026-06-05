@@ -1,5 +1,6 @@
-package com.agendamentos.adapter.outbound;
+package com.agendamentos.adapter.outbound.persistence.jpa;
 
+import com.agendamentos.adapter.outbound.persistence.entity.AgendamentoEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

@@ -28,21 +28,30 @@ Versão: 1.0 | Data: 2026-06-03
 
 ## Fase 2 — Domínio core (TDD)
 
-**Critério de conclusão:** consigo rodar `./mvnw test` e todos os testes do domínio passam. As regras de conflito de horário e máquina de estados funcionam sem tocar em banco ou HTTP.
+**Status:** [HITL] — Todas as tasks requerem validação antes de avançar
+
+**Critério de conclusão:** consigo rodar `./mvnw test` e todos os testes do domínio passam. As regras de conflito de horário e máquina de estados funcionam sem tocar em banco ou HTTP. CI/CD passa (checkstyle, spotbugs, jacoco ≥ 70%).
 
 **Tarefas:**
-- [ ] Criar entidades: `Agendamento`, `Cliente`, `Prestador`, `HorarioSlot`
-- [ ] Criar value objects: `Telefone`, `StatusAgendamento`, `NomeServico`
-- [ ] Criar portas (interfaces): `AgendamentoRepositoryPort`, `ClienteRepositoryPort`, `NotificacaoPort`
-- [ ] Escrever testes (TDD) para `AgendamentoService`:
+- [ ] **[HITL]** Criar entidades: `Agendamento`, `Cliente`, `Prestador`, `HorarioSlot`
+- [ ] **[HITL]** Criar value objects: `Telefone`, `StatusAgendamento`, `NomeServico`
+- [ ] **[HITL]** Criar portas (interfaces): `AgendamentoRepositoryPort`, `ClienteRepositoryPort`, `NotificacaoPort`
+- [ ] **[HITL]** Escrever testes (TDD) para `AgendamentoService`:
   - [ ] Criar agendamento com horário disponível → sucesso
   - [ ] Criar agendamento com conflito de horário → exceção
   - [ ] Criar agendamento no passado → exceção
   - [ ] Cancelar agendamento CONFIRMADO → sucesso
   - [ ] Cancelar agendamento CONCLUIDO → exceção
-- [ ] Implementar `AgendamentoService` até todos os testes passarem
-- [ ] Escrever testes para `ClienteService` (cadastrar, buscar por telefone)
-- [ ] Implementar `ClienteService`
+- [ ] **[HITL]** Implementar `AgendamentoService` até todos os testes passarem
+- [ ] **[HITL]** Escrever testes para `ClienteService` (cadastrar, buscar por telefone)
+- [ ] **[HITL]** Implementar `ClienteService`
+
+**Validação antes de avancar:**
+1. `mvn clean test` passa 100%
+2. `mvn checkstyle:check` passa
+3. `mvn spotbugs:check` passa (sem exclusões autoridades)
+4. Cobertura JaCoCo ≥ 70% (domínio deve ter ≥ 80%)
+5. CI/CD GitHub Actions passa
 
 ---
 

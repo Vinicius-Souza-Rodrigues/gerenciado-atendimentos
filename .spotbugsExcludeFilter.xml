@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Exclude test classes -->
+    <Match>
+        <Class name="~.*Test"/>
+    </Match>
+
+    <!-- Exclude generated code (Lombok) -->
+    <Match>
+        <Class name="~.*\$.*"/>
+    </Match>
+
+    <!-- NP_NULL_ON_SOME_PATH - False positive in some Spring scenarios -->
+    <Match>
+        <Bug pattern="NP_NULL_ON_SOME_PATH"/>
+        <Class name="~com\.agendamentos\.adapter\..*"/>
+    </Match>
+
+    <!-- EI_EXPOSE_REP - Acceptable for DTOs/entities with getter/setter pattern -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP"/>
+        <Or>
+            <Class name="~.*Entity"/>
+            <Class name="~.*Dto"/>
+            <Class name="~.*Request"/>
+            <Class name="~.*Response"/>
+        </Or>
+    </Match>
+
+    <!-- EI_EXPOSE_REP2 - Acceptable in same cases as above -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+        <Or>
+            <Class name="~.*Entity"/>
+            <Class name="~.*Dto"/>
+            <Class name="~.*Request"/>
+            <Class name="~.*Response"/>
+        </Or>
+    </Match>
+
+    <!-- UWF_UNWRITTEN_FIELD - False positive with Lombok @Data/@Builder -->
+    <Match>
+        <Bug pattern="UWF_UNWRITTEN_FIELD"/>
+        <Source name="~.*\.java"/>
+    </Match>
+
+    <!-- NM_SAME_SIMPLE_NAME_AS_INTERFACE - Acceptable for implementation classes -->
+    <Match>
+        <Bug pattern="NM_SAME_SIMPLE_NAME_AS_INTERFACE"/>
+    </Match>
+</FindBugsFilter>

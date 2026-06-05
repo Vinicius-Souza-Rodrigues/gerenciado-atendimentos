@@ -1,53 +1,62 @@
 package com.agendamentos.domain.service;
 
-import com.agendamentos.domain.exception.AgendamentoPassadoException;
-import com.agendamentos.domain.exception.ConflitoDHorarioException;
-import com.agendamentos.domain.model.Agendamento;
+import com.agendamentos.domain.entity.Agendamento;
+import com.agendamentos.domain.exception.*;
 import com.agendamentos.domain.port.AgendamentoRepositoryPort;
+import com.agendamentos.domain.port.NotificacaoPort;
 import com.agendamentos.domain.valueobject.NomeServico;
-import com.agendamentos.domain.valueobject.StatusAgendamento;
+import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@RequiredArgsConstructor
 public class AgendamentoService {
+    
+    private final AgendamentoRepositoryPort agendamentoRepository;
+    private final NotificacaoPort notificacaoPort;
 
-    private final AgendamentoRepositoryPort agendamentoRepo;
-
-    public AgendamentoService(AgendamentoRepositoryPort agendamentoRepo) {
-        this.agendamentoRepo = agendamentoRepo;
-    }
-
-    public Agendamento criar(UUID clienteId, UUID prestadorId, LocalDateTime dataHora, String servico) {
-        if (!dataHora.isAfter(LocalDateTime.now())) {
-            throw new AgendamentoPassadoException("Agendamento deve ser para uma data futura");
-        }
-
-        var conflitos = agendamentoRepo.listarConfirmadosPorPrestadorEPeriodo(prestadorId, dataHora, dataHora);
-        if (!conflitos.isEmpty()) {
-            throw new ConflitoDHorarioException("Já existe agendamento confirmado neste horário");
-        }
-
-        var agendamento = Agendamento.builder()
-                .id(UUID.randomUUID())
-                .clienteId(clienteId)
-                .prestadorId(prestadorId)
-                .dataHora(dataHora)
-                .servico(new NomeServico(servico))
-                .status(StatusAgendamento.PENDENTE)
-                .criadoEm(LocalDateTime.now())
-                .atualizadoEm(LocalDateTime.now())
-                .build();
-
-        return agendamentoRepo.salvar(agendamento);
+    public Agendamento criar(UUID clienteId, UUID prestadorId, LocalDateTime dataHora, NomeServico servico) {
+        validarAgendamento(clienteId, prestadorId, dataHora);
+        verificarConflitoDHorario(prestadorId, dataHora);
+        
+        Agendamento agendamento = new Agendamento(clienteId, prestadorId, dataHora, servico)
+            .confirmar();
+        
+        agendamentoRepository.salvar(agendamento);
+        
+        return agendamento;
     }
 
     public Agendamento cancelar(UUID agendamentoId) {
-        var agendamento = agendamentoRepo.buscarPorId(agendamentoId)
-                .orElseThrow(() -> new IllegalArgumentException("Agendamento não encontrado: " + agendamentoId));
-
-        var cancelado = agendamento.cancelar();
-        return agendamentoRepo.salvar(cancelado);
+        throw new UnsupportedOperationException("Implementar após portas estarem prontas");
     }
 
+    private void validarAgendamento(UUID clienteId, UUID prestadorId, LocalDateTime dataHora) {
+        if (clienteId == null) {
+            throw new IllegalArgumentException("Cliente ID não pode ser nulo");
+        }
+        if (prestadorId == null) {
+            throw new IllegalArgumentException("Prestador ID não pode ser nulo");
+        }
+        if (dataHora == null) {
+            throw new IllegalArgumentException("Data/hora não pode ser nula");
+        }
+        if (!dataHora.isAfter(LocalDateTime.now())) {
+            throw new AgendamentoNoPassadoException("Agendamento deve ser no futuro");
+        }
+    }
+
+    private void verificarConflitoDHorario(UUID prestadorId, LocalDateTime dataHora) {
+        var agendamentosNoHorario = agendamentoRepository.listarPorPrestadorEData(prestadorId, dataHora);
+        
+        if (!agendamentosNoHorario.isEmpty()) {
+            boolean temConfirmado = agendamentosNoHorario.stream()
+                .anyMatch(Agendamento::estahConfirmado);
+            
+            if (temConfirmado) {
+                throw new ConflitoDHorarioException("Horário indisponível para este prestador");
+            }
+        }
+    }
 }

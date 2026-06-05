@@ -1,15 +1,24 @@
 package com.agendamentos.domain.valueobject;
 
-public record Telefone(String valor) {
+import lombok.Value;
 
-    public Telefone {
-        if (valor == null || valor.isBlank()) {
-            throw new IllegalArgumentException("Telefone não pode ser vazio");
+@Value
+public class Telefone {
+    String numero;
+
+    public Telefone(String numero) {
+        if (numero == null || numero.isBlank()) {
+            throw new IllegalArgumentException("Telefone não pode estar vazio");
         }
-        valor = valor.replaceAll("[^0-9]", "");
-        if (valor.length() < 10 || valor.length() > 13) {
-            throw new IllegalArgumentException("Telefone inválido: deve ter entre 10 e 13 dígitos");
+        String limpo = numero.replaceAll("[^0-9]", "");
+        if (limpo.length() < 10 || limpo.length() > 15) {
+            throw new IllegalArgumentException("Telefone inválido: deve ter entre 10 e 15 dígitos");
         }
+        this.numero = limpo;
     }
 
+    @Override
+    public String toString() {
+        return numero;
+    }
 }

@@ -3,6 +3,25 @@ Gerenciador de Consultas | Iniciado: 2026-06-03
 
 ---
 
+## [2026-06-04] CI/CD Pipeline com GitHub Actions + Quality Gates
+
+**O que mudou:** Configurado CI/CD automatizado com GitHub Actions que roda em cada push/PR. Pipeline inclui: Checkstyle, Maven Surefire, SpotBugs, JaCoCo (cobertura mínima 70%).
+
+**Por que:** Para garantir qualidade de código desde Fase 2 (TDD), onde cada entrega crítica requer validação. CI/CD bloqueia PR com teste falhando ou cobertura baixa, forçando padrão de código antes de avanço.
+
+**Alternativa descartada:** CI/CD manual (rodar testes antes de commit) — descartada porque é fácil esquecer e permite code smell passar. Automatizar reduz carga cognitiva.
+
+**Impacto:** 
+- Toda tarefa [HITL] da Fase 2 em diante passa por pipeline obrigatório
+- Checkstyle garante formatação consistente (max 120 chars, sem tabs, naming conventions)
+- SpotBugs detecta bugs comuns (null pointers, resource leaks)
+- JaCoCo bloqueia PR com cobertura < 70% (domínio deve estar ≥ 80%)
+- Relatórios de cobertura disponíveis em artifacts do GitHub Actions
+
+**Como reverter:** Deletar `.github/workflows/maven.yml` e remover plugins do `pom.xml` — não recomendado, pipeline é leve e robusto.
+
+---
+
 ## [2026-06-03] Adoção de TDD + Arquitetura Hexagonal
 
 **O que mudou:** Metodologia definida como TDD com arquitetura Hexagonal (Ports & Adapters) para o backend Spring Boot.
