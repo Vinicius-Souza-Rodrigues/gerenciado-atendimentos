@@ -4,9 +4,11 @@ import com.agendamentos.domain.entity.Cliente;
 import com.agendamentos.domain.port.ClienteRepositoryPort;
 import com.agendamentos.domain.valueobject.Telefone;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+@Service
 @RequiredArgsConstructor
 public class ClienteService {
     

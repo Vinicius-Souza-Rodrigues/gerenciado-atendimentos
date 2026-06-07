@@ -6,10 +6,12 @@ import com.agendamentos.domain.port.AgendamentoRepositoryPort;
 import com.agendamentos.domain.port.NotificacaoPort;
 import com.agendamentos.domain.valueobject.NomeServico;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Service
 @RequiredArgsConstructor
 public class AgendamentoService {
     
@@ -49,14 +51,9 @@ public class AgendamentoService {
 
     private void verificarConflitoDHorario(UUID prestadorId, LocalDateTime dataHora) {
         var agendamentosNoHorario = agendamentoRepository.listarPorPrestadorEData(prestadorId, dataHora);
-        
+
         if (!agendamentosNoHorario.isEmpty()) {
-            boolean temConfirmado = agendamentosNoHorario.stream()
-                .anyMatch(Agendamento::estahConfirmado);
-            
-            if (temConfirmado) {
-                throw new ConflitoDHorarioException("Horário indisponível para este prestador");
-            }
+            throw new ConflitoDHorarioException("Horário indisponível para este prestador");
         }
     }
 }

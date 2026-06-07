@@ -48,4 +48,10 @@
     <Match>
         <Bug pattern="NM_SAME_SIMPLE_NAME_AS_INTERFACE"/>
     </Match>
+
+    <!-- UPM_UNCALLED_PRIVATE_METHOD - Helper methods in Controllers may not be called immediately -->
+    <Match>
+        <Bug pattern="UPM_UNCALLED_PRIVATE_METHOD"/>
+        <Class name="~.*Controller"/>
+    </Match>
 </FindBugsFilter>
