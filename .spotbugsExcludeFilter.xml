@@ -35,6 +35,7 @@
             <Class name="~.*Dto"/>
             <Class name="~.*Request"/>
             <Class name="~.*Response"/>
+            <Class name="~.*Gateway"/>
         </Or>
     </Match>
 

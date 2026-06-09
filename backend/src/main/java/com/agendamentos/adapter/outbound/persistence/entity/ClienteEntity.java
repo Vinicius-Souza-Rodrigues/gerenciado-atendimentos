@@ -26,6 +26,9 @@ public class ClienteEntity {
     @Column(name = "telefone", nullable = false, unique = true)
     private String telefone;
 
+    @Column(name = "telegram_chat_id")
+    private String telegramChatId;
+
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 

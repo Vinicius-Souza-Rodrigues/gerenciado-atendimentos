@@ -38,6 +38,12 @@ public class ClienteRepositoryAdapter implements ClienteRepositoryPort {
     }
 
     @Override
+    public Optional<Cliente> buscarPorTelegramChatId(String chatId) {
+        return jpaRepository.findByTelegramChatId(chatId)
+                .map(ClienteMapper::toDomain);
+    }
+
+    @Override
     public List<Cliente> listarTodos() {
         return jpaRepository.findAll().stream()
                 .map(ClienteMapper::toDomain)

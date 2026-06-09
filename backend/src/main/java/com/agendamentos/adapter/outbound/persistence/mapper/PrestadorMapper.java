@@ -11,6 +11,8 @@ public class PrestadorMapper {
                 entity.getId(),
                 entity.getNomeNegocio(),
                 new Telefone(entity.getTelefoneWhatsApp()),
+                entity.getEndereco() != null ? entity.getEndereco() : "",
+                entity.getMensagemPersonalizada() != null ? entity.getMensagemPersonalizada() : "",
                 entity.getCriadoEm()
         );
     }
@@ -20,6 +22,8 @@ public class PrestadorMapper {
         entity.setId(prestador.getId());
         entity.setNomeNegocio(prestador.getNomeNegocio());
         entity.setTelefoneWhatsApp(prestador.getTelefoneWhatsApp().getNumero());
+        entity.setEndereco(prestador.getEndereco());
+        entity.setMensagemPersonalizada(prestador.getMensagemPersonalizada());
         entity.setCriadoEm(prestador.getCriadoEm());
         return entity;
     }

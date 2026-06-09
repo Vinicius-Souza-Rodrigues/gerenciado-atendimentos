@@ -3,9 +3,11 @@ package com.agendamentos.domain.service;
 import com.agendamentos.domain.entity.Agendamento;
 import com.agendamentos.domain.exception.*;
 import com.agendamentos.domain.port.AgendamentoRepositoryPort;
-import com.agendamentos.domain.port.NotificacaoPort;
+import com.agendamentos.domain.port.ClienteRepositoryPort;
+import com.agendamentos.domain.port.PrestadorRepositoryPort;
 import com.agendamentos.domain.valueobject.NomeServico;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -13,21 +15,27 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AgendamentoService {
-    
+
     private final AgendamentoRepositoryPort agendamentoRepository;
-    private final NotificacaoPort notificacaoPort;
+    private final ClienteRepositoryPort clienteRepository;
+    private final PrestadorRepositoryPort prestadorRepository;
+    private final WhatsAppService whatsAppService;
+    private final TelegramService telegramService;
 
     public Agendamento criar(UUID clienteId, UUID prestadorId, LocalDateTime dataHora, NomeServico servico) {
         validarAgendamento(clienteId, prestadorId, dataHora);
         verificarConflitoDHorario(prestadorId, dataHora);
-        
+
         Agendamento agendamento = new Agendamento(clienteId, prestadorId, dataHora, servico)
             .confirmar();
-        
-        agendamentoRepository.salvar(agendamento);
-        
-        return agendamento;
+
+        var agendamentoSalvo = agendamentoRepository.salvar(agendamento);
+
+        enviarNotificacoes(agendamentoSalvo, clienteId, prestadorId);
+
+        return agendamentoSalvo;
     }
 
     public Agendamento cancelar(UUID agendamentoId) {
@@ -54,6 +62,20 @@ public class AgendamentoService {
 
         if (!agendamentosNoHorario.isEmpty()) {
             throw new ConflitoDHorarioException("Horário indisponível para este prestador");
+        }
+    }
+
+    private void enviarNotificacoes(Agendamento agendamento, UUID clienteId, UUID prestadorId) {
+        try {
+            var cliente = clienteRepository.buscarPorId(clienteId)
+                    .orElseThrow(() -> new IllegalArgumentException("Cliente não encontrado"));
+            var prestador = prestadorRepository.buscarPorId(prestadorId)
+                    .orElseThrow(() -> new IllegalArgumentException("Prestador não encontrado"));
+
+            whatsAppService.notificarAgendamentoCriado(agendamento, cliente, prestador);
+            telegramService.notificarAgendamentoCriado(agendamento, cliente, prestador);
+        } catch (Exception e) {
+            log.error("Erro ao enviar notificações para agendamento {}: {}", agendamento.getId(), e.getMessage());
         }
     }
 }

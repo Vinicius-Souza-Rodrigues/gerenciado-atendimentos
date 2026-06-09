@@ -12,4 +12,6 @@ public interface ClienteJpaRepository extends JpaRepository<ClienteEntity, UUID>
 
     Optional<ClienteEntity> findByTelefone(String telefone);
 
+    Optional<ClienteEntity> findByTelegramChatId(String telegramChatId);
+
 }

@@ -26,6 +26,12 @@ public class PrestadorEntity {
     @Column(name = "telefone_whatsapp", nullable = false)
     private String telefoneWhatsApp;
 
+    @Column(name = "endereco")
+    private String endereco;
+
+    @Column(name = "mensagem_personalizada", columnDefinition = "TEXT")
+    private String mensagemPersonalizada;
+
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 

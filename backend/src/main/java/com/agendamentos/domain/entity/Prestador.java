@@ -10,9 +10,15 @@ public class Prestador {
     UUID id;
     String nomeNegocio;
     Telefone telefoneWhatsApp;
+    String endereco;
+    String mensagemPersonalizada;
     LocalDateTime criadoEm;
 
     public Prestador(String nomeNegocio, Telefone telefoneWhatsApp) {
+        this(nomeNegocio, telefoneWhatsApp, "", "");
+    }
+
+    public Prestador(String nomeNegocio, Telefone telefoneWhatsApp, String endereco, String mensagemPersonalizada) {
         if (nomeNegocio == null || nomeNegocio.isBlank()) {
             throw new IllegalArgumentException("Nome do negócio não pode estar vazio");
         }
@@ -22,17 +28,21 @@ public class Prestador {
         this.id = UUID.randomUUID();
         this.nomeNegocio = nomeNegocio.trim();
         this.telefoneWhatsApp = telefoneWhatsApp;
+        this.endereco = endereco != null ? endereco : "";
+        this.mensagemPersonalizada = mensagemPersonalizada != null ? mensagemPersonalizada : "";
         this.criadoEm = LocalDateTime.now();
     }
 
-    private Prestador(UUID id, String nomeNegocio, Telefone telefoneWhatsApp, LocalDateTime criadoEm) {
+    private Prestador(UUID id, String nomeNegocio, Telefone telefoneWhatsApp, String endereco, String mensagemPersonalizada, LocalDateTime criadoEm) {
         this.id = id;
         this.nomeNegocio = nomeNegocio;
         this.telefoneWhatsApp = telefoneWhatsApp;
+        this.endereco = endereco;
+        this.mensagemPersonalizada = mensagemPersonalizada;
         this.criadoEm = criadoEm;
     }
 
-    public static Prestador comId(UUID id, String nomeNegocio, Telefone telefoneWhatsApp, LocalDateTime criadoEm) {
-        return new Prestador(id, nomeNegocio, telefoneWhatsApp, criadoEm);
+    public static Prestador comId(UUID id, String nomeNegocio, Telefone telefoneWhatsApp, String endereco, String mensagemPersonalizada, LocalDateTime criadoEm) {
+        return new Prestador(id, nomeNegocio, telefoneWhatsApp, endereco, mensagemPersonalizada, criadoEm);
     }
 }

@@ -5,7 +5,8 @@ import com.agendamentos.domain.entity.Cliente;
 import com.agendamentos.domain.entity.Prestador;
 import com.agendamentos.domain.exception.*;
 import com.agendamentos.domain.port.AgendamentoRepositoryPort;
-import com.agendamentos.domain.port.NotificacaoPort;
+import com.agendamentos.domain.port.ClienteRepositoryPort;
+import com.agendamentos.domain.port.PrestadorRepositoryPort;
 import com.agendamentos.domain.valueobject.NomeServico;
 import com.agendamentos.domain.valueobject.Telefone;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,10 +30,19 @@ class AgendamentoServiceTest {
     
     @Mock
     private AgendamentoRepositoryPort agendamentoRepository;
-    
+
     @Mock
-    private NotificacaoPort notificacaoPort;
-    
+    private ClienteRepositoryPort clienteRepository;
+
+    @Mock
+    private PrestadorRepositoryPort prestadorRepository;
+
+    @Mock
+    private WhatsAppService whatsAppService;
+
+    @Mock
+    private TelegramService telegramService;
+
     private AgendamentoService agendamentoService;
     
     private Cliente cliente;
@@ -42,7 +52,13 @@ class AgendamentoServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        agendamentoService = new AgendamentoService(agendamentoRepository, notificacaoPort);
+        agendamentoService = new AgendamentoService(
+                agendamentoRepository,
+                clienteRepository,
+                prestadorRepository,
+                whatsAppService,
+                telegramService
+        );
         
         cliente = new Cliente("João Silva", new Telefone("11999999999"));
         prestador = new Prestador("Barbearia XYZ", new Telefone("11988888888"));
@@ -54,18 +70,25 @@ class AgendamentoServiceTest {
     void givenHorarioDisponivel_whenCriarAgendamento_thenRetornaSucesso() {
         when(agendamentoRepository.listarPorPrestadorEData(prestador.getId(), horaFutura))
             .thenReturn(new ArrayList<>());
-        
+        when(agendamentoRepository.salvar(any(Agendamento.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
+        when(clienteRepository.buscarPorId(cliente.getId()))
+            .thenReturn(Optional.of(cliente));
+        when(prestadorRepository.buscarPorId(prestador.getId()))
+            .thenReturn(Optional.of(prestador));
+
         Agendamento agendamento = agendamentoService.criar(
             cliente.getId(),
             prestador.getId(),
             horaFutura,
             new NomeServico("Corte de cabelo")
         );
-        
+
         assertNotNull(agendamento);
         assertEquals(cliente.getId(), agendamento.getClienteId());
         assertEquals(prestador.getId(), agendamento.getPrestadorId());
         verify(agendamentoRepository).salvar(any(Agendamento.class));
+        verify(whatsAppService).notificarAgendamentoCriado(any(Agendamento.class), any(Cliente.class), any(Prestador.class));
     }
     
     @Test
