@@ -10,7 +10,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -26,6 +26,17 @@ server:
   port: ${SERVER_PORT:8080}
   servlet:
     context-path: /
+
+whatsapp:
+  enabled: false
+  evolution:
+    api-url: ${EVOLUTION_API_URL:}
+    api-key: ${EVOLUTION_API_KEY:}
+    instance: ${EVOLUTION_INSTANCE:}
+
+telegram:
+  enabled: ${TELEGRAM_ENABLED:false}
+  bot-token: ${TELEGRAM_BOT_TOKEN:}
 
 logging:
   level:

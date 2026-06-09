@@ -1,0 +1,7 @@
+[build]
+  dockerfilePath = "backend/Dockerfile"
+
+[deploy]
+  healthcheckPath = "/api/prestadores"
+  healthcheckTimeout = 60
+  restartPolicyType = "ON_FAILURE"

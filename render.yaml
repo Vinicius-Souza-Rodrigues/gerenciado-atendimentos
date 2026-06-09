@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: gerenciado-atendimentos
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /api/prestadores
+    envVars:
+      - key: SERVER_PORT
+        value: 10000
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DB_HOST
+        fromDatabase:
+          name: agendamentos-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: agendamentos-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: agendamentos-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: agendamentos-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: agendamentos-db
+          property: password
+      - key: TELEGRAM_ENABLED
+        value: "true"
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+
+databases:
+  - name: agendamentos-db
+    plan: free
+    databaseName: agendamentos
+    user: agendamentos

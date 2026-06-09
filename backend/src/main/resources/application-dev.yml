@@ -29,5 +29,5 @@ whatsapp:
     instance: ${EVOLUTION_INSTANCE:}
 
 telegram:
-  enabled: true
-  bot-token: 8842093458:AAHQegGrRpspGPVcFhezC-13syyqJPlgCz4
+  enabled: ${TELEGRAM_ENABLED:false}
+  bot-token: ${TELEGRAM_BOT_TOKEN:}
