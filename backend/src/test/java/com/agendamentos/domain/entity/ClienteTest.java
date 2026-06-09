@@ -41,7 +41,7 @@ class ClienteTest {
     @DisplayName("Restaurar cliente por ID -> funciona")
     void givenClienteComId_whenRestauraComId_thenSucesso() {
         Cliente cliente = new Cliente("Maria", new Telefone("11988888888"));
-        Cliente restaurado = Cliente.comId(cliente.getId(), "Maria", new Telefone("11988888888"), cliente.getCriadoEm());
+        Cliente restaurado = Cliente.comId(cliente.getId(), "Maria", new Telefone("11988888888"), null, cliente.getCriadoEm());
         
         assertEquals(cliente.getId(), restaurado.getId());
         assertEquals(cliente.getNome(), restaurado.getNome());
