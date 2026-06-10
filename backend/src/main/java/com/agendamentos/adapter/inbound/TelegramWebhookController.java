@@ -41,7 +41,9 @@ public class TelegramWebhookController {
             }
 
             var chatId = request.message().chat().id().toString();
-            var nomeCliente = request.message().chat().firstName();
+            var nomeCliente = request.message().chat().firstName() != null
+                    ? request.message().chat().firstName()
+                    : "Usuário " + chatId.substring(chatId.length() - 4);
             var mensagem = request.message().text();
 
             log.info("Mensagem recebida do chat {} ({}): {}", chatId, nomeCliente, mensagem);
