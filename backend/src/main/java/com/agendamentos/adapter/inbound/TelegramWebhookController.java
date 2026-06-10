@@ -2,10 +2,12 @@ package com.agendamentos.adapter.inbound;
 
 import com.agendamentos.adapter.inbound.dto.TelegramMensagemRequest;
 import com.agendamentos.domain.entity.Cliente;
+import com.agendamentos.domain.port.AgendamentoRepositoryPort;
 import com.agendamentos.domain.port.ClienteRepositoryPort;
 import com.agendamentos.domain.port.PrestadorRepositoryPort;
 import com.agendamentos.domain.service.AgendamentoMessageParser;
 import com.agendamentos.domain.service.AgendamentoService;
+import com.agendamentos.domain.service.HorarioDisponivelService;
 import com.agendamentos.domain.service.MensagensPersonalizadasService;
 import com.agendamentos.domain.service.TelegramService;
 import com.agendamentos.domain.valueobject.NomeServico;
@@ -27,6 +29,8 @@ public class TelegramWebhookController {
     private final MensagensPersonalizadasService mensagensService;
     private final TelegramService telegramService;
     private final AgendamentoService agendamentoService;
+    private final HorarioDisponivelService horarioService;
+    private final AgendamentoRepositoryPort agendamentoRepository;
     private final ClienteRepositoryPort clienteRepository;
     private final PrestadorRepositoryPort prestadorRepository;
 
@@ -115,12 +119,54 @@ public class TelegramWebhookController {
     }
 
     private void processarListarHorarios(String chatId, String nomeNegocio) {
-        log.info("Cliente pediu horários disponíveis");
-        telegramService.enviarMensagem(chatId,
-                mensagensService.mensagemHorariosDisponiveis(
-                        java.util.List.of("09:00", "10:30", "14:00", "15:30"),
-                        nomeNegocio
-                ));
+        try {
+            var cliente = buscarOuCriarCliente(chatId, "");
+            var horariosDisponiveis = gerarHorariosDisponiveis(cliente.getId());
+
+            if (horariosDisponiveis.isEmpty()) {
+                telegramService.enviarMensagem(chatId,
+                        "<b>⏳ Sem horários disponíveis</b>\n\n" +
+                        "Não há horários disponíveis no momento. Tente novamente mais tarde.");
+                return;
+            }
+
+            log.info("Cliente pediu horários disponíveis - encontrou {}", horariosDisponiveis.size());
+            telegramService.enviarMensagem(chatId,
+                    mensagensService.mensagemHorariosDisponiveis(horariosDisponiveis, nomeNegocio));
+        } catch (Exception e) {
+            log.error("Erro ao processar listagem de horários", e);
+            telegramService.enviarMensagem(chatId,
+                    "<b>❌ Erro ao listar horários</b>\n\nTente novamente.");
+        }
+    }
+
+    private java.util.List<String> gerarHorariosDisponiveis(UUID prestadorId) {
+        var horariosDisponiveis = new java.util.ArrayList<String>();
+        var agora = java.time.LocalDateTime.now();
+        var proximoDia = agora.plusDays(1);
+        var diaDaSemana = proximoDia.getDayOfWeek();
+
+        var horariosConfigurodos = horarioService.listarHorariosPrestador(prestadorId);
+        var horariosoDia = horariosConfigurodos.stream()
+            .filter(h -> h.getDiaDaSemana() == diaDaSemana && h.isAtivo())
+            .findFirst();
+
+        if (horariosoDia.isEmpty()) {
+            return horariosDisponiveis;
+        }
+
+        var horarioConfig = horariosoDia.get();
+        var horaInicio = horarioConfig.getHoraInicio();
+        var horaFim = horarioConfig.getHoraFim();
+
+        for (var hora = horaInicio; hora.isBefore(horaFim); hora = hora.plusHours(1)) {
+            var candidato = proximoDia.withHour(hora.getHour()).withMinute(0).withSecond(0).withNano(0);
+            var agendamentosNesse = agendamentoRepository.listarPorPrestadorEData(prestadorId, candidato);
+            if (agendamentosNesse.isEmpty()) {
+                horariosDisponiveis.add(String.format("%02d:00", hora.getHour()));
+            }
+        }
+        return horariosDisponiveis;
     }
 
     private void processarChegada(String chatId, String nomeCliente, UUID prestadorId) {
@@ -135,11 +181,38 @@ public class TelegramWebhookController {
 
     private void processarCancelamento(String chatId, String nomeCliente, UUID prestadorId) {
         try {
-            log.info("Cliente {} solicitou cancelamento", nomeCliente);
+            var cliente = buscarOuCriarCliente(chatId, nomeCliente);
+            var agendamentosDoCliente = agendamentoRepository.listarPorCliente(cliente.getId());
+
+            if (agendamentosDoCliente.isEmpty()) {
+                telegramService.enviarMensagem(chatId,
+                        "<b>❌ Nenhum agendamento encontrado</b>\n\nVocê não tem agendamentos para cancelar.");
+                return;
+            }
+
+            // busca o agendamento confirmado mais próximo
+            var agendamentoParaCancelar = agendamentosDoCliente.stream()
+                    .filter(a -> a.estahConfirmado() && a.estahNoFuturo())
+                    .min((a, b) -> a.getDataHora().compareTo(b.getDataHora()))
+                    .orElse(null);
+
+            if (agendamentoParaCancelar == null) {
+                telegramService.enviarMensagem(chatId,
+                        "<b>❌ Agendamento indisponível</b>\n\nNão há agendamentos confirmados para cancelar.");
+                return;
+            }
+
+            agendamentoService.cancelar(agendamentoParaCancelar.getId());
+
+            log.info("Agendamento {} cancelado via Telegram para cliente {}", agendamentoParaCancelar.getId(), chatId);
             telegramService.enviarMensagem(chatId,
-                    mensagensService.mensagemCancelamento("Seu agendamento"));
+                    "<b>✅ Cancelamento Confirmado</b>\n\nSeu agendamento de " +
+                    agendamentoParaCancelar.getServico().getValor() +
+                    " foi cancelado com sucesso.");
         } catch (Exception e) {
             log.error("Erro ao processar cancelamento", e);
+            telegramService.enviarMensagem(chatId,
+                    "<b>❌ Erro ao cancelar</b>\n\nOcorreu um erro ao processar seu cancelamento. Tente novamente.");
         }
     }
 

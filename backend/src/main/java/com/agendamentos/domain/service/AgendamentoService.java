@@ -39,7 +39,23 @@ public class AgendamentoService {
     }
 
     public Agendamento cancelar(UUID agendamentoId) {
-        throw new UnsupportedOperationException("Implementar após portas estarem prontas");
+        var agendamento = agendamentoRepository.buscarPorId(agendamentoId)
+                .orElseThrow(() -> new IllegalArgumentException("Agendamento não encontrado"));
+
+        var agendamentoCancelado = agendamento.cancelar();
+        var agendamentoSalvo = agendamentoRepository.salvar(agendamentoCancelado);
+
+        try {
+            var cliente = clienteRepository.buscarPorId(agendamento.getClienteId()).orElse(null);
+            if (cliente != null) {
+                telegramService.notificarStatusAtualizado(agendamentoSalvo, cliente);
+                whatsAppService.notificarStatusAtualizado(agendamentoSalvo, cliente);
+            }
+        } catch (Exception e) {
+            log.error("Erro ao enviar notificações de cancelamento para agendamento {}: {}", agendamentoId, e.getMessage());
+        }
+
+        return agendamentoSalvo;
     }
 
     private void validarAgendamento(UUID clienteId, UUID prestadorId, LocalDateTime dataHora) {
