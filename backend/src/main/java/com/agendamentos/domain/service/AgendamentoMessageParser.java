@@ -3,9 +3,12 @@ package com.agendamentos.domain.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Year;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -13,14 +16,32 @@ import java.util.regex.Pattern;
 @Slf4j
 public class AgendamentoMessageParser {
 
+    // aceita: [quero/gostaria/preciso] [marcar/agendar] SERVIÇO [em/para/no/na/dia] DATA [às/as/a] HORA
     private static final Pattern PATTERN_MARCAR = Pattern.compile(
-        "(?i)(quero|gostaria|preciso)\\s+(marcar|agendar)\\s+(um|uma)?\\s*(.+?)\\s+(em|para|no)\\s+(.+?)\\s+(às|em|às)?\\s*(\\d{1,2}[:\\.]\\d{2})");
+        "(?i)(?:(?:quero|gostaria|preciso)\\s+(?:de\\s+)?)?(?:marcar|agendar)\\s+(?:um\\s+|uma\\s+)?"
+        + "(?<servico>.+?)\\s+"
+        + "(?:em|para|no|na|dia)\\s+"
+        + "(?<data>amanhã|amanha|hoje"
+        + "|segunda(?:-feira)?|terça(?:-feira)?|terca(?:-feira)?"
+        + "|quarta(?:-feira)?|quinta(?:-feira)?|sexta(?:-feira)?"
+        + "|sábado|sabado|domingo"
+        + "|\\d{1,2}/\\d{2}(?:/\\d{4})?)"
+        + "\\s*(?:às?|as|a)?\\s*"
+        + "(?<hora>\\d{1,2}[hH]\\d{0,2}|\\d{1,2}[:\\.]\\d{2})");
+
+    // aceita: horário, horarios, disponível, quando tem
     private static final Pattern PATTERN_HORARIOS = Pattern.compile(
-        "(?i)(quais|que|quem)\\s+(horários|horarios|horas|disponível|disponivel)");
+        "(?i)(?:horários?|horarios?|disponível|disponivel|quando\\s+tem)");
+
+    // aceita: cheguei, já cheguei, estou aqui, tô aqui, chegando etc.
     private static final Pattern PATTERN_CHEGADA = Pattern.compile(
-        "(?i)(cheguei|já estou|estou chegando|to chegando)");
+        "(?i)(?:cheguei|já\\s+cheguei|ja\\s+cheguei|já\\s+estou|ja\\s+estou"
+        + "|estou\\s+chegando|to\\s+chegando|tô\\s+chegando"
+        + "|estou\\s+aqui|to\\s+aqui|tô\\s+aqui|chegando)");
+
+    // aceita: cancelar, quero cancelar, desmarcar, quero desmarcar
     private static final Pattern PATTERN_CANCELAR = Pattern.compile(
-        "(?i)(cancelar|desmarcar)\\s+(.+)");
+        "(?i)(?:quero\\s+)?(?:cancelar|desmarcar)(?:\\s+.+)?");
 
     public TipoComando identificarComando(String mensagem) {
         if (mensagem == null || mensagem.isBlank()) {
@@ -50,28 +71,76 @@ public class AgendamentoMessageParser {
             return null;
         }
 
-        String servico = matcher.group(4).trim();
-        String data = matcher.group(6).trim();
-        String hora = matcher.group(8).trim();
-
-        return new DadosAgendamento(servico, data, hora);
+        return new DadosAgendamento(
+            matcher.group("servico").trim(),
+            matcher.group("data").trim(),
+            matcher.group("hora").trim()
+        );
     }
 
     public LocalDateTime parseDataHora(String data, String hora) {
         try {
-            String horaFormatada = hora.replace(".", ":");
-            // adiciona o ano corrente se vier apenas dd/MM
-            String dataCompleta = data.matches("\\d{2}/\\d{2}")
-                ? data + "/" + Year.now().getValue()
-                : data;
-            String dataHora = dataCompleta + " " + horaFormatada;
+            String horaFormatada = normalizarHora(hora);
+            LocalDate localDate = normalizarData(data);
 
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-            return LocalDateTime.parse(dataHora, formatter);
+            if (localDate == null) {
+                return null;
+            }
+
+            String[] parts = horaFormatada.split(":");
+            int hour = Integer.parseInt(parts[0]);
+            int minute = Integer.parseInt(parts[1]);
+            return localDate.atTime(hour, minute);
         } catch (Exception e) {
             log.warn("Erro ao fazer parse de data/hora: {} {}", data, hora, e);
             return null;
         }
+    }
+
+    private String normalizarHora(String hora) {
+        // 14h30 → 14:30
+        if (hora.matches("\\d{1,2}[hH]\\d{2}")) {
+            return hora.replaceAll("[hH]", ":");
+        }
+        // 14h → 14:00
+        if (hora.matches("\\d{1,2}[hH]")) {
+            return hora.replaceAll("[hH]", ":00");
+        }
+        // 14.30 → 14:30
+        return hora.replace(".", ":");
+    }
+
+    private LocalDate normalizarData(String data) {
+        String dataSemAcento = data.toLowerCase().trim()
+            .replace("ã", "a").replace("á", "a").replace("à", "a")
+            .replace("ç", "c").replace("é", "e").replace("ê", "e");
+
+        switch (dataSemAcento) {
+            case "hoje": return LocalDate.now();
+            case "amanha": return LocalDate.now().plusDays(1);
+            default: break;
+        }
+
+        DayOfWeek dia = parseDiaDaSemana(dataSemAcento);
+        if (dia != null) {
+            return LocalDate.now().with(TemporalAdjusters.next(dia));
+        }
+
+        String dataCompleta = data.matches("\\d{1,2}/\\d{2}")
+            ? data + "/" + Year.now().getValue()
+            : data;
+        return LocalDate.parse(dataCompleta, DateTimeFormatter.ofPattern("d/MM/yyyy"));
+    }
+
+    private DayOfWeek parseDiaDaSemana(String dia) {
+        if (dia.startsWith("segunda")) return DayOfWeek.MONDAY;
+        if (dia.startsWith("terca"))   return DayOfWeek.TUESDAY;
+        if (dia.startsWith("quarta"))  return DayOfWeek.WEDNESDAY;
+        if (dia.startsWith("quinta"))  return DayOfWeek.THURSDAY;
+        if (dia.startsWith("sexta"))   return DayOfWeek.FRIDAY;
+        if (dia.startsWith("sabado"))  return DayOfWeek.SATURDAY;
+        if (dia.startsWith("domingo")) return DayOfWeek.SUNDAY;
+        return null;
     }
 
     public enum TipoComando {
@@ -82,5 +151,5 @@ public class AgendamentoMessageParser {
         DESCONHECIDO
     }
 
-    public record DadosAgendamento(String servico, String data, String hora) {}
+    public record DadosAgendamento(String servico, String data, String hora) { }
 }
