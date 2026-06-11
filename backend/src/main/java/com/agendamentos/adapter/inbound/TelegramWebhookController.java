@@ -62,7 +62,7 @@ public class TelegramWebhookController {
                     processarMarcarAgendamento(chatId, nomeCliente, prestadorId, mensagem);
                     break;
                 case LISTAR_HORARIOS:
-                    processarListarHorarios(chatId, prestador.getNomeNegocio());
+                    processarListarHorarios(chatId, prestador.getNomeNegocio(), prestadorId);
                     break;
                 case AVISAR_CHEGADA:
                     processarChegada(chatId, nomeCliente, prestadorId);
@@ -118,10 +118,9 @@ public class TelegramWebhookController {
         }
     }
 
-    private void processarListarHorarios(String chatId, String nomeNegocio) {
+    private void processarListarHorarios(String chatId, String nomeNegocio, UUID prestadorId) {
         try {
-            var cliente = buscarOuCriarCliente(chatId, "");
-            var horariosDisponiveis = gerarHorariosDisponiveis(cliente.getId());
+            var horariosDisponiveis = gerarHorariosDisponiveis(prestadorId);
 
             if (horariosDisponiveis.isEmpty()) {
                 telegramService.enviarMensagem(chatId,
@@ -146,8 +145,8 @@ public class TelegramWebhookController {
         var proximoDia = agora.plusDays(1);
         var diaDaSemana = proximoDia.getDayOfWeek();
 
-        var horariosConfigurodos = horarioService.listarHorariosPrestador(prestadorId);
-        var horariosoDia = horariosConfigurodos.stream()
+        var horariosConfigurados = horarioService.listarHorariosPrestador(prestadorId);
+        var horariosoDia = horariosConfigurados.stream()
             .filter(h -> h.getDiaDaSemana() == diaDaSemana && h.isAtivo())
             .findFirst();
 

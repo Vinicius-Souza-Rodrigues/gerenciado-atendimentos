@@ -5,9 +5,8 @@ import com.agendamentos.domain.port.HorarioDisponivelRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.DayOfWeek;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,6 +21,7 @@ public class HorarioDisponivelService {
         return horarioRepository.listarPorPrestador(prestadorId);
     }
 
+    @Transactional
     public List<HorarioDisponivel> atualizarHorariosPrestador(UUID prestadorId, List<HorarioDisponivelDTO> horarios) {
         horarioRepository.deletarTodosPorPrestador(prestadorId);
 
@@ -39,14 +39,6 @@ public class HorarioDisponivelService {
                 return horarioRepository.salvar(horarioDisponivel);
             })
             .toList();
-    }
-
-    public boolean temHorarioDisponivel(UUID prestadorId, DayOfWeek dia, LocalTime hora, LocalTime horaFim) {
-        var horariosDisponivel = horarioRepository.listarPorPrestadorEDia(prestadorId, dia);
-
-        return horariosDisponivel.stream()
-            .filter(HorarioDisponivel::isAtivo)
-            .anyMatch(h -> !hora.isBefore(h.getHoraInicio()) && horaFim.isBefore(h.getHoraFim()));
     }
 
     public record HorarioDisponivelDTO(

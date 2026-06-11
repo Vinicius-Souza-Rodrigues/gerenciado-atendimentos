@@ -26,7 +26,7 @@ public class HorarioDisponivelController {
     @GetMapping
     public ResponseEntity<List<HorarioDisponivelResponse>> listarHorarios(
             @PathVariable UUID prestadorId) {
-        var prestador = prestadorRepository.buscarPorId(prestadorId)
+        prestadorRepository.buscarPorId(prestadorId)
                 .orElseThrow(() -> new IllegalArgumentException("Prestador não encontrado"));
 
         var horarios = horarioService.listarHorariosPrestador(prestadorId);
@@ -48,17 +48,22 @@ public class HorarioDisponivelController {
     public ResponseEntity<List<HorarioDisponivelResponse>> atualizarHorarios(
             @PathVariable UUID prestadorId,
             @RequestBody AtualizarHorariosRequest request) {
-        var prestador = prestadorRepository.buscarPorId(prestadorId)
+        prestadorRepository.buscarPorId(prestadorId)
                 .orElseThrow(() -> new IllegalArgumentException("Prestador não encontrado"));
 
-        var horariosDTO = request.horarios().stream()
-            .map(h -> new HorarioDisponivelDTO(
-                DayOfWeek.valueOf(h.diaDaSemana().toUpperCase()),
-                h.horaInicio(),
-                h.horaFim(),
-                h.ativo()
-            ))
-            .toList();
+        List<HorarioDisponivelDTO> horariosDTO;
+        try {
+            horariosDTO = request.horarios().stream()
+                .map(h -> new HorarioDisponivelDTO(
+                    DayOfWeek.valueOf(h.diaDaSemana().toUpperCase()),
+                    h.horaInicio(),
+                    h.horaFim(),
+                    h.ativo()
+                ))
+                .toList();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
 
         var atualizado = horarioService.atualizarHorariosPrestador(prestadorId, horariosDTO);
 

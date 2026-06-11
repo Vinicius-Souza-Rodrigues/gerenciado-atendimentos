@@ -6,6 +6,7 @@ import com.agendamentos.domain.entity.HorarioDisponivel;
 import com.agendamentos.domain.port.HorarioDisponivelRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.util.List;
@@ -53,6 +54,7 @@ public class HorarioDisponivelRepositoryAdapter implements HorarioDisponivelRepo
     }
 
     @Override
+    @Transactional
     public void deletarTodosPorPrestador(UUID prestadorId) {
         jpaRepository.deleteByPrestadorId(prestadorId);
     }

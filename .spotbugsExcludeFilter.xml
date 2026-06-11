@@ -27,7 +27,7 @@
         </Or>
     </Match>
 
-    <!-- EI_EXPOSE_REP2 - Acceptable in same cases as above -->
+    <!-- EI_EXPOSE_REP2 - Acceptable in same cases as above + Spring-managed adapters -->
     <Match>
         <Bug pattern="EI_EXPOSE_REP2"/>
         <Or>
@@ -36,6 +36,7 @@
             <Class name="~.*Request"/>
             <Class name="~.*Response"/>
             <Class name="~.*Gateway"/>
+            <Class name="~.*RepositoryAdapter"/>
         </Or>
     </Match>
 
