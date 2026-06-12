@@ -20,17 +20,22 @@ import com.agendamentos.domain.valueobject.NomeServico;
 import com.agendamentos.domain.valueobject.StatusAgendamento;
 import com.agendamentos.domain.valueobject.Telefone;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
 public class RestApiController {
+
+    @Value("${telegram.bot-username:}")
+    private String telegramBotUsername;
 
     private final AgendamentoService agendamentoService;
     private final ClienteService clienteService;
@@ -86,6 +91,24 @@ public class RestApiController {
 
         var salvo = agendamentoRepository.salvar(atualizado);
         return ResponseEntity.ok(toResponse(salvo));
+    }
+
+    @GetMapping("/prestadores/{id}")
+    public ResponseEntity<PrestadorResponse> buscarPrestador(@PathVariable UUID id) {
+        return prestadorRepository.buscarPorId(id)
+                .map(this::toResponse)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/prestadores/{id}/link")
+    public ResponseEntity<Map<String, String>> getLinkTelegram(@PathVariable UUID id) {
+        prestadorRepository.buscarPorId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Prestador não encontrado"));
+        if (telegramBotUsername == null || telegramBotUsername.isBlank()) {
+            return ResponseEntity.ok(Map.of("link", "TELEGRAM_BOT_USERNAME não configurado"));
+        }
+        return ResponseEntity.ok(Map.of("link", "https://t.me/" + telegramBotUsername + "?start=" + id));
     }
 
     @GetMapping("/prestadores")

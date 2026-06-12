@@ -5,6 +5,7 @@ import com.agendamentos.domain.entity.Cliente;
 import com.agendamentos.domain.port.AgendamentoRepositoryPort;
 import com.agendamentos.domain.port.ClienteRepositoryPort;
 import com.agendamentos.domain.port.PrestadorRepositoryPort;
+import com.agendamentos.domain.port.TelegramContextoPort;
 import com.agendamentos.domain.service.AgendamentoMessageParser;
 import com.agendamentos.domain.service.AgendamentoService;
 import com.agendamentos.domain.service.HorarioDisponivelService;
@@ -33,11 +34,10 @@ public class TelegramWebhookController {
     private final AgendamentoRepositoryPort agendamentoRepository;
     private final ClienteRepositoryPort clienteRepository;
     private final PrestadorRepositoryPort prestadorRepository;
+    private final TelegramContextoPort contextoPort;
 
-    @PostMapping("/{prestadorId}")
-    public ResponseEntity<Void> receberMensagem(
-            @PathVariable UUID prestadorId,
-            @RequestBody TelegramMensagemRequest request) {
+    @PostMapping
+    public ResponseEntity<Void> receberMensagem(@RequestBody TelegramMensagemRequest request) {
         try {
             if (request.message() == null || request.message().text() == null) {
                 log.warn("Mensagem vazia recebida");
@@ -48,10 +48,23 @@ public class TelegramWebhookController {
             var nomeCliente = request.message().chat().firstName() != null
                     ? request.message().chat().firstName()
                     : "Usuário " + chatId.substring(chatId.length() - 4);
-            var mensagem = request.message().text();
+            var mensagem = request.message().text().trim();
 
             log.info("Mensagem recebida do chat {} ({}): {}", chatId, nomeCliente, mensagem);
 
+            if (mensagem.startsWith("/start")) {
+                processarInicio(chatId, nomeCliente, mensagem);
+                return ResponseEntity.ok().build();
+            }
+
+            var prestadorIdOpt = contextoPort.buscarPrestadorId(chatId);
+            if (prestadorIdOpt.isEmpty()) {
+                telegramService.enviarMensagem(chatId,
+                        "<b>Olá! 👋</b>\n\nPara começar, use o link do estabelecimento que você deseja agendar.");
+                return ResponseEntity.ok().build();
+            }
+
+            var prestadorId = prestadorIdOpt.get();
             var prestador = prestadorRepository.buscarPorId(prestadorId)
                     .orElseThrow(() -> new IllegalArgumentException("Prestador não encontrado"));
 
@@ -82,6 +95,28 @@ public class TelegramWebhookController {
         }
     }
 
+    private void processarInicio(String chatId, String nomeCliente, String mensagem) {
+        var partes = mensagem.split(" ");
+        if (partes.length < 2) {
+            telegramService.enviarMensagem(chatId,
+                    "<b>Olá! 👋</b>\n\nUse o link do estabelecimento para começar.");
+            return;
+        }
+        try {
+            var prestadorId = UUID.fromString(partes[1]);
+            var prestador = prestadorRepository.buscarPorId(prestadorId).orElse(null);
+            if (prestador == null) {
+                telegramService.enviarMensagem(chatId, "<b>❌ Link inválido.</b>\n\nVerifique o link e tente novamente.");
+                return;
+            }
+            contextoPort.vincular(chatId, prestadorId);
+            log.info("Chat {} vinculado ao prestador {}", chatId, prestadorId);
+            telegramService.enviarMensagem(chatId, mensagensService.mensagemBoasVindas(prestador));
+        } catch (IllegalArgumentException e) {
+            telegramService.enviarMensagem(chatId, "<b>❌ Link inválido.</b>\n\nVerifique o link e tente novamente.");
+        }
+    }
+
     private void processarMarcarAgendamento(String chatId, String nomeCliente, UUID prestadorId, String mensagem) {
         try {
             var dados = messageParser.extrairDados(mensagem);
@@ -101,7 +136,6 @@ public class TelegramWebhookController {
 
             var cliente = buscarOuCriarCliente(chatId, nomeCliente);
 
-            // AgendamentoService.criar já dispara notificarAgendamentoCriado via TelegramService
             agendamentoService.criar(
                     cliente.getId(),
                     prestadorId,
@@ -125,7 +159,7 @@ public class TelegramWebhookController {
             if (horariosDisponiveis.isEmpty()) {
                 telegramService.enviarMensagem(chatId,
                         "<b>⏳ Sem horários disponíveis</b>\n\n" +
-                        "Não há horários disponíveis no momento. Tente novamente mais tarde.");
+                        "Não há horários disponíveis nos próximos 7 dias. Tente novamente mais tarde.");
                 return;
             }
 
@@ -142,27 +176,30 @@ public class TelegramWebhookController {
     private java.util.List<String> gerarHorariosDisponiveis(UUID prestadorId) {
         var horariosDisponiveis = new java.util.ArrayList<String>();
         var agora = java.time.LocalDateTime.now();
-        var proximoDia = agora.plusDays(1);
-        var diaDaSemana = proximoDia.getDayOfWeek();
-
         var horariosConfigurados = horarioService.listarHorariosPrestador(prestadorId);
-        var horariosoDia = horariosConfigurados.stream()
-            .filter(h -> h.getDiaDaSemana() == diaDaSemana && h.isAtivo())
-            .findFirst();
+        var formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM (EEE)", new java.util.Locale("pt", "BR"));
 
-        if (horariosoDia.isEmpty()) {
-            return horariosDisponiveis;
-        }
+        for (int i = 1; i <= 7; i++) {
+            var dia = agora.plusDays(i);
+            var diaDaSemana = dia.getDayOfWeek();
 
-        var horarioConfig = horariosoDia.get();
-        var horaInicio = horarioConfig.getHoraInicio();
-        var horaFim = horarioConfig.getHoraFim();
+            var sessoesNoDia = horariosConfigurados.stream()
+                .filter(h -> h.getDiaDaSemana() == diaDaSemana && h.isAtivo())
+                .toList();
 
-        for (var hora = horaInicio; hora.isBefore(horaFim); hora = hora.plusHours(1)) {
-            var candidato = proximoDia.withHour(hora.getHour()).withMinute(0).withSecond(0).withNano(0);
-            var agendamentosNesse = agendamentoRepository.listarPorPrestadorEData(prestadorId, candidato);
-            if (agendamentosNesse.isEmpty()) {
-                horariosDisponiveis.add(String.format("%02d:00", hora.getHour()));
+            for (var sessao : sessoesNoDia) {
+                var inicio = dia.withHour(sessao.getHoraInicio().getHour())
+                               .withMinute(sessao.getHoraInicio().getMinute())
+                               .withSecond(0).withNano(0);
+                var fim = dia.withHour(sessao.getHoraFim().getHour())
+                            .withMinute(sessao.getHoraFim().getMinute())
+                            .withSecond(0).withNano(0);
+
+                if (!agendamentoRepository.existeConflito(prestadorId, inicio, fim)) {
+                    horariosDisponiveis.add(
+                        dia.format(formatter) + " " + sessao.getHoraInicio() + " - " + sessao.getHoraFim()
+                    );
+                }
             }
         }
         return horariosDisponiveis;
@@ -189,7 +226,6 @@ public class TelegramWebhookController {
                 return;
             }
 
-            // busca o agendamento confirmado mais próximo
             var agendamentoParaCancelar = agendamentosDoCliente.stream()
                     .filter(a -> a.estahConfirmado() && a.estahNoFuturo())
                     .min((a, b) -> a.getDataHora().compareTo(b.getDataHora()))
@@ -228,7 +264,6 @@ public class TelegramWebhookController {
     private Cliente buscarOuCriarCliente(String chatId, String nomeCliente) {
         return clienteRepository.buscarPorTelegramChatId(chatId)
                 .orElseGet(() -> {
-                    // chatId é numérico — padding para 11 dígitos para satisfazer validação de Telefone
                     String telefonePlaceholder = String.format("%011d", Math.abs(Long.parseLong(chatId)));
                     var novoCliente = new Cliente(nomeCliente, new Telefone(telefonePlaceholder), chatId);
                     return clienteRepository.salvar(novoCliente);

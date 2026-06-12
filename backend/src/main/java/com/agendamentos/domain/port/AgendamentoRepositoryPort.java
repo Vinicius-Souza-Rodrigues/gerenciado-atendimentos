@@ -13,4 +13,5 @@ public interface AgendamentoRepositoryPort {
     List<Agendamento> listarPorPrestador(UUID prestadorId);
     List<Agendamento> listarPorPrestadorEData(UUID prestadorId, LocalDateTime data);
     List<Agendamento> listarPorCliente(UUID clienteId);
+    boolean existeConflito(UUID prestadorId, LocalDateTime inicio, LocalDateTime fim);
 }
