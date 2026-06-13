@@ -61,4 +61,9 @@ public class AgendamentoRepositoryAdapter implements AgendamentoRepositoryPort {
                 .toList();
     }
 
+    @Override
+    public boolean existeConflito(UUID prestadorId, LocalDateTime inicio, LocalDateTime fim) {
+        return !jpaRepository.findConfirmadosByPrestadorAndPeriodo(prestadorId, inicio, fim).isEmpty();
+    }
+
 }
