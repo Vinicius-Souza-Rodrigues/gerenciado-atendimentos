@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.UUID;
 
@@ -47,7 +48,7 @@ public class JwtService {
     }
 
     private SecretKey getKey() {
-        var bytes = secret.getBytes();
+        var bytes = secret.getBytes(StandardCharsets.UTF_8);
         if (bytes.length < 32) {
             var padded = new byte[32];
             System.arraycopy(bytes, 0, padded, 0, bytes.length);
