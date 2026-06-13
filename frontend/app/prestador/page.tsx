@@ -77,36 +77,42 @@ export default function PrestadorPage() {
     }
   }
 
-  if (loading) return <div className="p-6 text-gray-500">Carregando...</div>;
-  if (!prestador) return <div className="p-6 text-gray-500">Nenhum prestador cadastrado.</div>;
+  if (loading) return <div className="p-6 text-gray-400 text-sm">Carregando...</div>;
+  if (!prestador) return (
+    <div className="p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow px-4 py-10 text-center text-gray-400 dark:text-gray-500 text-sm">
+        Nenhum prestador cadastrado.
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-6 max-w-2xl">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Prestador</h2>
+      <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">Prestador</h2>
 
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <h3 className="font-semibold text-gray-700 mb-2">Dados</h3>
-        <p className="text-gray-800 font-medium">{prestador.nomeNegocio}</p>
-        <p className="text-gray-500 text-sm font-mono">{prestador.telefoneWhatsApp}</p>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+        <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">Dados</h3>
+        <p className="text-gray-800 dark:text-gray-100 font-medium">{prestador.nomeNegocio}</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm font-mono">{prestador.telefoneWhatsApp}</p>
       </div>
 
       {link && (
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <h3 className="font-semibold text-gray-700 mb-2">Link do Telegram</h3>
-          <p className="text-xs text-gray-500 mb-2">Compartilhe com seus clientes</p>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+          <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">Link do Telegram</h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Compartilhe com seus clientes</p>
           <a
             href={link}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 text-sm break-all hover:underline"
+            className="text-blue-600 dark:text-blue-400 text-sm break-all hover:underline"
           >
             {link}
           </a>
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow p-4">
-        <h3 className="font-semibold text-gray-700 mb-4">Horários de Atendimento</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-4">Horários de Atendimento</h3>
         <div className="space-y-3">
           {DIAS.map((dia, i) => (
             <div key={dia.key} className="flex items-center gap-3 text-sm">
@@ -114,23 +120,23 @@ export default function PrestadorPage() {
                 type="checkbox"
                 checked={horarios[i]?.ativo ?? false}
                 onChange={(e) => atualizar(i, "ativo", e.target.checked)}
-                className="w-4 h-4"
+                className="w-4 h-4 accent-gray-700 dark:accent-gray-400"
               />
-              <span className="w-20 text-gray-700">{dia.label}</span>
+              <span className="w-20 text-gray-700 dark:text-gray-300">{dia.label}</span>
               <input
                 type="time"
                 value={horarios[i]?.hora_inicio ?? "08:00"}
                 onChange={(e) => atualizar(i, "hora_inicio", e.target.value)}
                 disabled={!horarios[i]?.ativo}
-                className="border rounded px-2 py-1 disabled:opacity-40"
+                className="border border-gray-200 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 disabled:opacity-40"
               />
-              <span className="text-gray-400">até</span>
+              <span className="text-gray-400 dark:text-gray-500">até</span>
               <input
                 type="time"
                 value={horarios[i]?.hora_fim ?? "18:00"}
                 onChange={(e) => atualizar(i, "hora_fim", e.target.value)}
                 disabled={!horarios[i]?.ativo}
-                className="border rounded px-2 py-1 disabled:opacity-40"
+                className="border border-gray-200 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 disabled:opacity-40"
               />
             </div>
           ))}
@@ -140,12 +146,16 @@ export default function PrestadorPage() {
           <button
             onClick={salvar}
             disabled={salvando}
-            className="px-4 py-2 bg-gray-800 text-white text-sm rounded hover:bg-gray-700 disabled:opacity-50"
+            className="px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white text-sm rounded hover:bg-gray-700 dark:hover:bg-gray-500 disabled:opacity-50"
           >
             {salvando ? "Salvando..." : "Salvar horários"}
           </button>
           {mensagem && (
-            <span className={`text-sm ${mensagem.includes("Erro") ? "text-red-500" : "text-green-600"}`}>
+            <span className={`text-sm ${
+              mensagem.includes("Erro")
+                ? "text-red-600 dark:text-red-400"
+                : "text-green-600 dark:text-green-400"
+            }`}>
               {mensagem}
             </span>
           )}
