@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, HorarioDisponivel, Prestador } from "@/lib/api";
+import { getPrestadorId } from "@/lib/auth";
 
 const DIAS = [
   { key: "MONDAY", label: "Segunda" },
@@ -29,17 +30,16 @@ export default function PrestadorPage() {
   const [mensagem, setMensagem] = useState<string | null>(null);
 
   useEffect(() => {
-    api.prestadores.listar().then(async (lista) => {
-      if (lista.length === 0) { setLoading(false); return; }
-      const p = lista[0];
+    const id = getPrestadorId();
+    if (!id) { setLoading(false); return; }
+
+    Promise.all([
+      api.prestadores.buscar(id),
+      api.prestadores.horarios.listar(id).catch(() => [] as HorarioDisponivel[]),
+      api.prestadores.link(id).catch(() => ({ link: "" })),
+    ]).then(([p, horariosData, linkData]) => {
       setPrestador(p);
-
-      const [horariosData, linkData] = await Promise.all([
-        api.prestadores.horarios.listar(p.id).catch(() => []),
-        api.prestadores.link(p.id).catch(() => ({ link: "" })),
-      ]);
-
-      setLink(linkData.link);
+      setLink((linkData as { link: string }).link);
 
       const slots: SlotForm[] = DIAS.map((d) => {
         const existente = (horariosData as HorarioDisponivel[]).find(

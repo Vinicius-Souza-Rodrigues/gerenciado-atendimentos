@@ -23,3 +23,8 @@ export function getNomeNegocio(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(KEY_NOME);
 }
+
+export function getPrestadorId(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(KEY_PRESTADOR_ID);
+}
