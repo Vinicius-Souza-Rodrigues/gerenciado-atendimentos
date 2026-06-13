@@ -50,4 +50,11 @@ public class ClienteRepositoryAdapter implements ClienteRepositoryPort {
                 .toList();
     }
 
+    @Override
+    public List<Cliente> listarPorPrestador(UUID prestadorId) {
+        return jpaRepository.findByPrestadorId(prestadorId).stream()
+                .map(ClienteMapper::toDomain)
+                .toList();
+    }
+
 }

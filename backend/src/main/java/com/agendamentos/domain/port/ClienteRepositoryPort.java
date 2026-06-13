@@ -12,4 +12,5 @@ public interface ClienteRepositoryPort {
     Optional<Cliente> buscarPorTelefone(Telefone telefone);
     Optional<Cliente> buscarPorTelegramChatId(String chatId);
     List<Cliente> listarTodos();
+    List<Cliente> listarPorPrestador(UUID prestadorId);
 }

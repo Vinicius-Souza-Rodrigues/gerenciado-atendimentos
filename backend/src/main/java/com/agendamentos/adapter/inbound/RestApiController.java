@@ -25,6 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -45,8 +46,9 @@ public class RestApiController {
     private final PrestadorRepositoryPort prestadorRepository;
 
     @GetMapping("/agendamentos")
-    public ResponseEntity<List<AgendamentoResponse>> listarAgendamentos() {
-        var agendamentos = agendamentoRepository.listarTodos();
+    public ResponseEntity<List<AgendamentoResponse>> listarAgendamentos(HttpServletRequest request) {
+        var prestadorId = (UUID) request.getAttribute("prestadorId");
+        var agendamentos = agendamentoRepository.listarPorPrestador(prestadorId);
         var responses = agendamentos.stream()
                 .map(this::toResponse)
                 .toList();
@@ -132,8 +134,9 @@ public class RestApiController {
     }
 
     @GetMapping("/clientes")
-    public ResponseEntity<List<ClienteResponse>> listarClientes() {
-        var clientes = clienteRepository.listarTodos();
+    public ResponseEntity<List<ClienteResponse>> listarClientes(HttpServletRequest request) {
+        var prestadorId = (UUID) request.getAttribute("prestadorId");
+        var clientes = clienteRepository.listarPorPrestador(prestadorId);
         var responses = clientes.stream()
                 .map(this::toResponse)
                 .toList();

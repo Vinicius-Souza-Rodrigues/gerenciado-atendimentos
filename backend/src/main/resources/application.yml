@@ -34,6 +34,9 @@ whatsapp:
     api-key: ${EVOLUTION_API_KEY:}
     instance: ${EVOLUTION_INSTANCE:}
 
+jwt:
+  secret: ${JWT_SECRET:dev-secret-key-change-in-production-minimum-32-chars}
+
 telegram:
   enabled: ${TELEGRAM_ENABLED:false}
   bot-token: ${TELEGRAM_BOT_TOKEN:}

@@ -32,6 +32,9 @@ public class PrestadorEntity {
     @Column(name = "mensagem_personalizada", columnDefinition = "TEXT")
     private String mensagemPersonalizada;
 
+    @Column(name = "senha")
+    private String senha;
+
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 
