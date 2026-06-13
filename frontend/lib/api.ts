@@ -1,6 +1,6 @@
 import { getToken, limparSessao } from "./auth";
 
-const BASE = "/backend";
+const BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
 export interface Agendamento {
   id: string;
