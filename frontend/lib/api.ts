@@ -89,10 +89,15 @@ async function patch<T>(path: string, body: unknown): Promise<T> {
 
 export const api = {
   auth: {
-    login: (prestadorId: string, senha: string) =>
+    login: (nomeNegocio: string, senha: string) =>
       post<{ token: string; prestadorId: string; nomeNegocio: string }>(
         "/api/auth/login",
-        { prestadorId, senha }
+        { nomeNegocio, senha }
+      ),
+    registro: (nomeNegocio: string, telefoneWhatsApp: string, senha: string) =>
+      post<{ token: string; prestadorId: string; nomeNegocio: string }>(
+        "/api/auth/registro",
+        { nomeNegocio, telefoneWhatsApp, senha }
       ),
   },
   agendamentos: {
