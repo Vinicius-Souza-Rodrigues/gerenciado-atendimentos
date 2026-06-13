@@ -26,12 +26,13 @@ export default function PrestadorPage() {
   const [link, setLink] = useState<string | null>(null);
   const [horarios, setHorarios] = useState<SlotForm[]>([]);
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
 
   useEffect(() => {
     const id = getPrestadorId();
-    if (!id) { setLoading(false); return; }
+    if (!id) { setErro("prestadorId não encontrado no localStorage"); setLoading(false); return; }
 
     Promise.all([
       api.prestadores.buscar(id),
@@ -54,7 +55,10 @@ export default function PrestadorPage() {
       });
       setHorarios(slots);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch((e: unknown) => {
+      setErro(e instanceof Error ? e.message : String(e));
+      setLoading(false);
+    });
   }, []);
 
   function atualizar(index: number, campo: keyof SlotForm, valor: string | boolean) {
@@ -81,7 +85,7 @@ export default function PrestadorPage() {
   if (!prestador) return (
     <div className="p-6">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow px-4 py-10 text-center text-gray-400 dark:text-gray-500 text-sm">
-        Nenhum prestador cadastrado.
+        {erro ?? "Nenhum prestador cadastrado."}
       </div>
     </div>
   );
