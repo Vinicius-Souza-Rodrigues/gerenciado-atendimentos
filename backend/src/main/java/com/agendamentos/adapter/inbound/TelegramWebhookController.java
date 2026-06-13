@@ -57,7 +57,7 @@ public class TelegramWebhookController {
                 return ResponseEntity.ok().build();
             }
 
-            var prestadorIdOpt = contextoPort.buscarPrestadorId(chatId);
+            var prestadorIdOpt = resolverPrestadorId(chatId);
             if (prestadorIdOpt.isEmpty()) {
                 telegramService.enviarMensagem(chatId,
                         "<b>Olá! 👋</b>\n\nPara começar, use o link do estabelecimento que você deseja agendar.");
@@ -98,8 +98,15 @@ public class TelegramWebhookController {
     private void processarInicio(String chatId, String nomeCliente, String mensagem) {
         var partes = mensagem.split(" ");
         if (partes.length < 2) {
-            telegramService.enviarMensagem(chatId,
-                    "<b>Olá! 👋</b>\n\nUse o link do estabelecimento para começar.");
+            var prestador = resolverPrestadorUnico();
+            if (prestador != null) {
+                contextoPort.vincular(chatId, prestador.getId());
+                log.info("Chat {} vinculado automaticamente ao prestador {}", chatId, prestador.getId());
+                telegramService.enviarMensagem(chatId, mensagensService.mensagemBoasVindas(prestador));
+            } else {
+                telegramService.enviarMensagem(chatId,
+                        "<b>Olá! 👋</b>\n\nUse o link do estabelecimento para começar.");
+            }
             return;
         }
         try {
@@ -115,6 +122,23 @@ public class TelegramWebhookController {
         } catch (IllegalArgumentException e) {
             telegramService.enviarMensagem(chatId, "<b>❌ Link inválido.</b>\n\nVerifique o link e tente novamente.");
         }
+    }
+
+    private java.util.Optional<UUID> resolverPrestadorId(String chatId) {
+        var opt = contextoPort.buscarPrestadorId(chatId);
+        if (opt.isPresent()) return opt;
+        var unico = resolverPrestadorUnico();
+        if (unico != null) {
+            contextoPort.vincular(chatId, unico.getId());
+            log.info("Chat {} vinculado automaticamente ao prestador {}", chatId, unico.getId());
+            return java.util.Optional.of(unico.getId());
+        }
+        return java.util.Optional.empty();
+    }
+
+    private com.agendamentos.domain.entity.Prestador resolverPrestadorUnico() {
+        var todos = prestadorRepository.listarTodos();
+        return todos.size() == 1 ? todos.get(0) : null;
     }
 
     private void processarMarcarAgendamento(String chatId, String nomeCliente, UUID prestadorId, String mensagem) {
