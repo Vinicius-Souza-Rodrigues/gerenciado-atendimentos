@@ -54,7 +54,7 @@ export default function PrestadorPage() {
       });
       setHorarios(slots);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, []);
 
   function atualizar(index: number, campo: keyof SlotForm, valor: string | boolean) {
