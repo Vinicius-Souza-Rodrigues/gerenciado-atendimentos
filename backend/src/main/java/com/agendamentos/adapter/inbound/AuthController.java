@@ -47,7 +47,6 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
         var entity = new PrestadorEntity();
-        entity.setId(UUID.randomUUID());
         entity.setNomeNegocio(request.nomeNegocio());
         entity.setTelefoneWhatsApp(request.telefoneWhatsApp());
         entity.setEndereco("");
