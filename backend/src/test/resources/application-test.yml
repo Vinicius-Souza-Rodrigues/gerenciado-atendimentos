@@ -19,5 +19,8 @@ spring:
     console:
       enabled: false
 
+jwt:
+  secret: test-secret-key-for-unit-tests-only-minimum-32-chars
+
 server:
   port: 0

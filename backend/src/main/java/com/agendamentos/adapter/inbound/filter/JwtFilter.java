@@ -51,6 +51,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 || path.startsWith("/webhook/")
                 || path.equals("/api/prestadores")
                 || (path.startsWith("/api/prestadores/") && path.endsWith("/link"))
+                || path.equals("/health")
                 || path.equals("/actuator/health");
     }
 
