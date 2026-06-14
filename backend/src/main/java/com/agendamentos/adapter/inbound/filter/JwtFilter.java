@@ -23,7 +23,7 @@ public class JwtFilter extends OncePerRequestFilter {
                                     FilterChain chain) throws ServletException, IOException {
         var path = request.getRequestURI();
 
-        if (isPublico(path)) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod()) || isPublico(path)) {
             chain.doFilter(request, response);
             return;
         }
